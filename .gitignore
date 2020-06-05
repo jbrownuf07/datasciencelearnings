@@ -1,0 +1,17 @@
+.RData
+.Rhistory
+*.Rproj
+.Rproj.user/
+.python-version
+
+*.pkl
+notebooks/*.nb.html
+notebooks/TimeSeries/*.nb.html
+
+notebooks/data/cats_and_dogs/
+notebooks/.ipynb_checkpoints/
+notebooks/int_ds/
+
+notebooks/Python Examples/.ipynb_checkpoints/
+notebooks/Python Examples/Untitled.ipynb
+notebooks/Untitled.ipynb

@@ -1,0 +1,183 @@
+---
+title: "Logistic Regression"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+# Citation
+
+[website](https://www.machinelearningplus.com/machine-learning/logistic-regression-tutorial-examples-r/)
+
+# Logistic Regression Equation
+
+$Z_i = ln(\frac{P_i}{1 - P_i}) = \alpha + \beta_1x_1 + .. + \beta_nx_n$
+
+where $P$ is the probobility of event and always lays between 0 and 1.
+
+Taking the exponent of both sides of the equation gives:
+
+$P_i = E(y = 1|x_i) = \frac{e^z}{1 + e^z} = \frac{e^{\alpha + \beta_ix_i}}{1 + e^{\alpha + \beta_ix_i}}$
+
+```{code}
+# Template code
+# Step 1: Build Logit model on Training Dataset
+logitModel <- glm(Y ~ X1 + X2, family = 'binomial', data = trainingData)
+
+# Step 2: Predict Y on Test Dataset
+predictedY <- predict(logitModel, testData, type = 'response')
+```
+
+# Building the logistic regression model in R
+
+We're going to use the BreastCancer dataset in the `mlbench` package.
+
+```{r Loading data}
+# install.packages('mlbench')
+data(BreastCancer, package = 'mlbench')
+
+## Create a copy of the BreastCancer dataset
+bc <- BreastCancer[complete.cases(BreastCancer), ]
+head(bc)
+```
+
+```{r Examining the dataset}
+str(bc)
+```
+
+In this example, we are interested in the relationship between `Cell.shape`, which is an ordered factor, and `Class`. When you build a logistic model with factor variables, R converts each level in the factor to a dummy binary variable of 1's and 0's. The ordered factor is going to be a problem here because of the hierarchy. We need to remove that hierarchy and convert `Cell.shape` into a regular factor.
+
+## Preprocessing the dataset
+
+```{r preprocessing the dataset}
+## Remove the Id field
+bc <- bc[,-1]
+
+fields_to_factorize <- names(bc)[-ncol(bc)]
+for (field in fields_to_factorize) {
+  bc[, field] <- factor(as.character(bc[, field]))
+}
+str(bc)
+```
+
+```{r preprocessing the response variable}
+bc$Class <- ifelse(bc$Class == 'malignant', 1, 0)
+bc$Class <- factor(bc$Class, levels = c(0, 1))
+str(bc)
+```
+
+# How to deal with class imbalance
+
+Before building the logistic model, you need to randomly split the data into training and test samples.
+
+Since the response variable is a binary categorical variable, you need to make sure that the training data has approximately equal proportions of classes.
+
+```{r Inspecting the response variable}
+table(bc$Class)
+```
+
+The classes are split between `benign` (0) and `malignant` (1) approximately 1:2.
+
+Clearly there is a class imbalance. So, before building the logit model, you need to build samples such that both the 1's and 0's are in approximately equal proportions.
+
+This concern is normally handled with a couple of techniques called:
+* Down sampling
+* Up sampling
+* Hybrid sampling using [SMOTE and ROSE](https://topepo.github.io/caret/subsampling-for-class-imbalances.html#subsampling-techniques)
+
+## How to handle Class Imbalance with Upsampling and Downsampling
+
+In Down sampling, the majority class is randomly down sampled to be of the same size as the smaller class. That means, when creating the training dataset, the rows with the benign Class will be picked fewer times during the random sampling. 
+
+Similarly, in Up sampling, rows from the minority class, that is `malignant`, is repeatedly sampled over and over again till it reaches the same size as the majority class [`benign`].
+
+But in the case of the Hybrid sampling, artificial data points are generated and are systematically added around the minority class. This can be implemented using the `SMOTE` and `ROSE` packages.
+
+```{r Split train and test subsets}
+library(caret)
+
+'%ni%' <- Negate('%in%') # define the 'NOT IN" function
+options(scipen = 999)    # prevents printing scientific notation
+
+# Prep Training and Test data
+set.seed(100)
+trainDataIndex <- createDataPartition(bc$Class, p = 0.7, list = F) # 70% training data
+trainData <- bc[trainDataIndex, ]
+testData <- bc[-trainDataIndex, ]
+```
+
+```{r Inspecting the train subset}
+table(trainData$Class)
+```
+
+There are approximately 2 times more benign samples in the training dataset. So, let's down sample that training dataset using the `downSample` function from the `caret` package.
+
+To do this, you just need to provide the X and Y variables as arguments.
+
+```{r Down-sampling}
+## Down sample
+set.seed(100)
+down_train <- downSample(x = trainData[, colnames(trainData) %ni% 'Class'],
+                         y = trainData$Class)
+
+# table(down_train)
+```
+
+```{r Up-sampling}
+## Up sample
+set.seed(100)
+up_train <- upSample(x = trainData[, colnames(trainData) %ni% 'Class'],
+                     y = trainData$Class)
+
+# table(up_train)
+```
+
+# Building a logistic regression
+
+```{r Building the logistic regression model}
+## Build Logistic Model
+logitmod <- glm(Class ~ Cl.thickness + Cell.size + Cell.shape, family = 'binomial', data = down_train)
+
+summary(logitmod)
+```
+
+# Predict on test data
+
+The logit model is now constructed. You can now use it to predict the response on `testData`.
+
+```{r Predicting the test data}
+pred <- predict(logitmod, newdata = testData, type = 'response')
+```
+
+Now, `pred` contains the probability that the observation is malignant for each observation.
+
+Note that, when you use logistic regression, you need to set `type="response"` in order to compute the prediction probabilities. This argument is not needed in case of linear regression.
+
+The common practice is to take the probability cutoff as 0.5. If the probability of Y is > 0.5, then it can be classified as an event [malignant].
+
+So, if pred is greater than 0.5, it is malignant otherwise it is benign.
+
+```{r}
+y_pred_num <- ifelse(pred > 0.5, 1, 0)
+y_pred <- factor(y_pred_num, levels=c(0, 1))
+y_act <- testData$Class
+```
+
+Let's compute the accuracy, which is nothing but the proportion of `y_pred` that matches with `y_act`.
+
+```{r Compute accuracy rate}
+1 - mean(y_pred == y_act)
+```
+
+# Why handling with class imbalance is important?
+
+To understand, let's assume you have a dataset where 95% of the Y values belong to the benign class and 5% belong to malignant class.
+
+Had I just blindly predicted all the data points as benign, I would have achieved an accuracy percentage of 95%, which sounds pretty high. But, obviously that is flawed. What matters is how well you predict the malignant classes. 
+
+So, that requires the benign and malignant classes are balanced AND on top of that I need more refined accuracy measures and model evaluation metrics to improve my prediction model.
+
+# Conclusion
+
+
+

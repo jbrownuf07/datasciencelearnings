@@ -1,0 +1,381 @@
+---
+title: "A Comprehensive Guide to Naive Bayes in R"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+```{r wrap-hook, include=FALSE}
+library(knitr)
+hook_output = knit_hooks$get('output')
+knit_hooks$set(output = function(x, options) {
+  # this hook is used only when the linewidth option is not NULL
+  if (!is.null(n <- options$linewidth)) {
+    x = knitr:::split_lines(x)
+    # any lines wider than n should be wrapped
+    if (any(nchar(x) > n)) x = strwrap(x, width = n)
+    x = paste(x, collapse = '\n')
+  }
+  hook_output(x, options)
+})
+```
+
+# Resource
+
+This guide follows this [website](https://www.edureka.co/blog/naive-bayes-in-r/).
+
+```{r}
+data_file_path <- '../data/diabetes.csv'
+```
+
+# Introduction
+
+## What is Naive Bayes
+
+*Naive Bayes is a Supervised Machine Learning algorithm based on Bayes Theorem that is used to solve classification problems by following a probabilistic approach. It is based on the idea that the predictor variables in a Machine Learning model are independent of each other. Meaning that the outcome of a model depends on a set of independent variables that have nothing to do with one another.*
+
+## But, why is it called `Naive`?
+
+In real world problems, predictor variables are not always independent of each other, there are always some correlations between them. Since Naive Bayes considers each predictor variable to be independent of any other variable in the model, it is called `Naive`.
+
+## The Math behind Naive Bayes
+
+The principle behind Naive Bayes is the Bayes Theorem also known as the Bayes Rule. The Bayes theorem is used to calculate the conditional probability, which is nothing but the probability of an event occurring based on information about the events in the past. 
+
+$P(A|B) = \frac{(P(B|A)P(A)}{P(B)}$
+
+Formmally, the terminologies of the Bayes Theorem are as follows:
+
+* A is known as the proposition and B is known as the evidence
+* P(A) represents the prior probability of the proposition
+* P(B) represents the prior probability of the evidence
+* P(A|B) is called the posterior
+* P(B|A) is called the likelihood
+
+Therefore, Bayes theorem can be summed up as:
+
+**Posterior = (Likelihood) * (Proposition prior probability) / Evidence prior probability**
+
+### Another way to state Bayes Theorem
+
+Given a Hypothesis (H) and Evidence (E), Bayes theorem states that the relationship between the probability of Hypothesis before getting the evidence P(H) and the probability of the hypothesis after getting the evidence P(H|E) is:
+
+$P(H|E) = \frac{P(E|H)P(H)}{{P(E)}}$
+
+## How does Naive Bayes Work?
+
+To get a better understanding of how Naive Bayes works, let's look at an example.
+
+Consider a data set with 1500 observations and the following output classes:
+
+* Cat
+* Parrot
+* Turtle
+
+The predictor variables are categorical in nature, *i.e.*, they store two values, either `True` or `False`:
+
+* Swim
+* Wings
+* Green Color
+* Sharp Teeth
+
+```{r}
+data.frame(
+  Type = c('Cat', 'Parrot', 'Turtle'),
+  Swim = c('450/500', '50/500', '500/500'),
+  Wings = c('0', '500/500', '0'),
+  `Green Color` = c('0', '400/500', '100/500'),
+  `Sharp Teeth` = c('500/500', '0', '50/500')
+)
+```
+
+From the above table, we can summarize that:
+
+The class of type Cat shows that:
+
+* Out of 500, 450 (90%) cats can swim
+* 0 number of cats have wings
+* 0 number of cats are of Green color
+* All 500 cats have sharp teeth
+
+The class of type Parrot shows that:
+
+* 50 (10%) parrots have a true value for swim
+* All 500 parrots have wings
+* Out of 500, 400 (80%) parrots are green in color
+* No parrots have sharp teeth
+
+The class of type Turtle shows that:
+
+* All 500 turtles can swim
+* No turtles have wings
+* Out of 500, 100 (20%) are green in color
+* Out of 500, 50 (10%) have sharp teeth
+
+Now, with the available data, let's classify the following observation into one of the four output classes (Cats, Parrots, Turtles) by using a Naive Bayes Classifier:
+
+```{r}
+data.frame(
+  ID = 'New Observation',
+  Swim = TRUE,
+  Wings = FALSE,
+  Green = TRUE,
+  `Sharp Teeth` = FALSE
+)
+```
+
+The goal here is to predict whether the animal is a Cat, Parrot, or Turtle based on the defined predictor variables (swim, wings, green color, sharp teeth).
+
+To solve this, we will use the Naive Bayes approach,
+$P(H|Multiple Evidences) = \frac{P(C_1|H) * P(C_2|H) ... P(C_n|H) P(H)}{P(Multiple Evidences)}$
+
+In the observation, the variables Swim and Green are true and the outcome cqn be any one of the animals (Cat, Parrot, Turtle).
+
+To check that the animal is a cat:
+
+$P(Cat|Swim,Green) = P(Swim|Cat) * P(Green|Cat) * P(Cat) / P(Swim, Green)$
+$P(Cat|Swim,Green) = 0.9 * 0 * 0.333 / P(Swim, Green)$
+$P(Cat|Swim,Green) = 0$
+
+To check that the animal is a parrot:
+
+$P(Parrot|Swim,Green) = P(Swim|Parrot) * P(Green|Parrot) * P(Parrot) / P(Swim, Green)$
+$P(Parrot|Swim,Green) = 0.1 * 0.8 * 0.333 / P(Swim, Green)$
+$P(Parrot|Swim,Green) = 0.02664 / P(Swim, Green)$
+
+To check that the animal is a turtle:
+
+$P(Turtle|Swim,Green) = P(Swim|Turtle) * P(Green|Turtle) * P(Turtle) / P(Swim, Green)$
+$P(Turtle|Swim,Green) = 1.0 * 0.2 * 0.333 / P(Swim, Green)$
+$P(Turtle|Swim,Green) = 0.066 / P(Swim, Green)$
+
+For all the above calculations, the denominator is the same, ie. P(Swim, Green). The value of P(Turtle|Swim, Green) is greater than P(Parrot|Swim, Green), therefore we can correctly predict the class of the animal as turtle. 
+
+Now, let's see how you can implement Naive Bayes using the R language.
+
+# Practical Implementation of Naive Bayes in R
+
+**Problem Statement:** To study a Diabetes data set and build a Machine Learning model that predicts whether or not a person has Diabetes.
+
+**Data Set Description:** The given data set contains 100% of observations of patients along with their health details. Here's a list of the predictor variables that will help us classify a patient as either Diabetic or Normal:
+
+* Pregnancies: Number of pregnancies so far.
+* Glucose: Plasma glucose concentation
+* BloodPressure: Diastolic blood pressure (mm Hg)
+* SkinThickness: Triceps skin fold thickness (mm)
+* Insulin: 2-Hour serum insulin (mu U/ml)
+* BMI: Body mass index (weight in kg/(height in m)^2)
+* DiabetesPedigreeFunction: Diabetes pedigree function
+* Age: Age (years)
+
+The response variable or the output variable is:
+
+* Outcome: Class variable (0 or 1)
+
+**Objective:** To build a Naive Bayes model in order to classify patients as either Diabetic or normal by studying their medical records such as Glucose level, age, BMI, etc.
+
+Now that you know the objective of this demo, let's get our brains working and start coding. 
+
+## Step 1: Import the required packages
+
+```{r load the required packages, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(caret)
+library(caretEnsemble)
+library(psych)
+library(Amelia)
+library(mice)
+library(GGally)
+library(rpart)
+library(randomForest)
+```
+
+## Step 2: Import the data set
+
+```{r import data set}
+df <- read.csv(data_file_path)
+```
+
+Before we study the data set, let's convert the output variable (`"Outcome"`) into a categorical variable. This is necessary because our output will be in the form of 2 classes, `TRUE` or `FALSE`. Where `TRUE` denotes that a patient has diabetes and `FALSE` indicates that the person is diabetes-free.
+
+```{r Setting outcome variable as a factor}
+df$Outcome <- factor(df$Outcome, levels = c(0, 1), labels = c('False', 'True'))
+```
+
+## Step 3: Study the data set
+
+```{r Studying the data set}
+str(df)
+```
+
+```{r}
+df %>% head(10)
+```
+
+```{r}
+describe(df)
+```
+
+## Step 4: Data cleaning
+
+While analyzing the structure of the data set, we can see that the minimum values for Glucose, BloodPressure, SkinThickness, Insulin, and BMI are all zero. This is not ideal since no one can have a value of zero for Glucose, blood pressure, etc. Therefore, such values are treated as missing observations.
+
+```{r Convert zero values to NA}
+df[, 2:7][df[, 2:7] == 0] <- NA
+```
+
+```{r Visualize the missing values in the data set}
+missmap(df)
+```
+
+The above plot shows that our data set has plenty of missing values and removing all of them will leave us with an even smaller data set, therefore, we can perform imputations by using the *mice* package in R.
+
+```{r Use mice package to predict missing values, message=FALSE, warning=FALSE}
+mice_mod <- mice(df %>% select(Glucose, BloodPressure, SkinThickness, Insulin, BMI), method = 'rf')
+mice_complete <- complete(mice_mod)
+```
+
+```{r Transfer the predicted values into a complete data set}
+df_complete <- df %>%
+  mutate(
+    Glucose = mice_complete$Glucose,
+    BloodPressure = mice_complete$BloodPressure,
+    SkinThickness = mice_complete$SkinThickness,
+    Insulin = mice_complete$Insulin,
+    BMI = mice_complete$BMI)
+```
+
+Check to see if there are any missing values:
+
+```{r}
+missmap(df_complete)
+```
+
+## Exploratory Data Analysis
+
+Now, let's perform a couple of visualizations to take a better look at each variable, this stage is essential to understanding the significance of each predictor variable.
+
+```{r Data Visualization 1}
+ggplot(df_complete, aes(Age, color = Outcome)) + 
+  geom_freqpoly(binwidth = 1) +
+  labs(title = 'Age distribution by Outcome') +
+  theme_bw()
+```
+
+```{r Data Visualization 2}
+ggplot(df_complete, aes(Pregnancies, fill = Outcome, colour = Outcome)) +
+  geom_histogram(binwidth = 1) +
+  labs(title = 'Pregnancy Distribution by Outcome') +
+  theme_bw()
+```
+
+```{r Data Visualization 3}
+ggplot(df_complete, aes(BMI, fill = Outcome, colour = Outcome)) +
+  geom_histogram(binwidth = 1) +
+  labs(title = 'BMI distribution by Outcome') +
+  theme_bw()
+```
+
+```{r Data Visualization 4}
+ggplot(df_complete, aes(Glucose, colour = Outcome)) +
+  geom_freqpoly(binwidth = 1) +
+  labs(title = 'Glucose Distribution by Outcome') +
+  theme_bw()
+```
+
+```{r Data Visualization 5, message=FALSE}
+ggpairs(df_complete)
+```
+
+## Step 6: Data Modeling
+
+This stage begins with a process called *Data Splicing*, wherein the data set is split into two parts:
+
+* **Training set:** This part of the data set is used to build and train the Machine Learning model.
+* **Test set:** This part of the data set is used to evaluate the efficiency of the model.
+
+```{r Split the data into training and testing sets}
+indexTrain <- createDataPartition(df_complete$Outcome, p = 0.75, list = FALSE)
+
+df_train <- df_complete[indexTrain,]
+df_test <- df_complete[-indexTrain,]
+```
+
+```{r Check original dimensions before the split}
+prop.table(table(df_complete$Outcome)) * 100
+```
+
+```{r Check training dimensions of the split}
+prop.table(table(df_train$Outcome)) * 100
+```
+
+```{r Check testing dimensions of the split}
+prop.table(table(df_test$Outcome)) * 100
+```
+
+For comparing the outcome of the training and testing phase let's create separate variables that store the value of the response variable.
+
+```{r}
+## Create objects `x` which holds the predictor variables and `y` which holds the response variables
+x <- df_train[,-9]
+y <- df_train$Outcome
+```
+
+Now, it's time to load the `e1071` package that holds the Naive Bayes function. This is a built-in function provided by R.
+
+```{r}
+library(e1071)
+```
+
+After loading the package, the below script will create Naive Bayes model by using the training data set:
+
+```{r message=FALSE, warning=FALSE}
+nbm <- train(x, y, 'nb', trControl = trainControl(method = 'cv', number = 10))
+
+nbm
+```
+
+We have now created a predictive classification model by using the Naive Bayes Classifier.
+
+## Step 7: Model Evaluation
+
+To check the efficiency of the model, we are now going to run the testing data set on the model, after which we will evaluate the accuracy of the model by using a Confusion Matrix.
+
+```{r Model Evaluation, warning=FALSE}
+## Predict testing data set
+Predict <- predict(nbm, newdata = df_test)
+
+## Get the confusion matrix to see accuracy value and other parameter values
+conf_matrix <- confusionMatrix(Predict, df_test$Outcome)
+conf_matrix
+```
+
+```{r, linewidth=60}
+cat(paste0('The final output shows that we built a Naive Bayes classifier that can predict whether a person is diabetic or not, with a accuracy of approximately ', round((conf_matrix$table[2, 2] + conf_matrix$table[1, 1]) / sum(conf_matrix$table) * 100), '%'))
+```
+
+To summarize the demo, let's draw a plot that shows how each predictor variable is independently responsible for predicting the outcome. 
+
+```{r}
+## Plot variable performance
+X <- varImp(nbm)
+plot(X)
+```
+
+From the above illustration, it is clear that `Glucose` is the most significant variable for predicting the outcome.
+
+Now that you know how Naive Bayes works, I'm sure you're curious to learn more about the various Machine Learning algorithms. Here's a list of blogs on Machine Learning Algorithms:
+
+* [Linear Regression](https://www.edureka.co/blog/linear-regression-in-r/)
+* [Logistic Regression](https://www.edureka.co/blog/logistic-regression-in-r/)
+* [Support Vector Machine](https://www.edureka.co/blog/support-vector-machine-in-r/)
+* [Decision Trees](https://www.edureka.co/blog/decision-tree-algorithm/)
+* [Random Forest](https://www.edureka.co/blog/random-forest-classifier/)
+* [K-Means](https://www.edureka.co/blog/k-means-clustering-algorithm/)
+
+```{r}
+
+```
+
+

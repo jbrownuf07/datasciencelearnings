@@ -1,0 +1,11 @@
+---
+title: "Time Series Analysis with Generalized Additive Models"
+output: html_notebook
+---
+
+# Resources
+
+[KDnuggets](https://www.kdnuggets.com/2017/04/time-series-analysis-generalized-additive-models.html)
+
+
+

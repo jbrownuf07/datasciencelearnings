@@ -1,0 +1,7 @@
+---
+title: "Doing Magic and Analyzing Seasonal Time Series with GAM (Generalized Additive Models) in R"
+output: html_notebook
+---
+
+[Reference](https://petolau.github.io/Analyzing-double-seasonal-time-series-with-GAM-in-R/)
+

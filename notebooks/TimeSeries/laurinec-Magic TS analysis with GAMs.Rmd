@@ -1,0 +1,34 @@
+---
+title: "Doing magic and analyzing seasonal time series with GAM in R"
+output: html_notebook
+---
+
+# Resource
+
+[Peter Laurinec](https://petolau.github.io/Analyzing-double-seasonal-time-series-with-GAM-in-R/)
+
+# Theory behind Generalized Additive Models (GAM)
+
+Let's first look at a Linear Model, which is a simple linear regression model that models the response (dependent) variable by independent variable(s). It is solved by the ordinary least squares (OLS) method. So now we know what the **M** in the name means.
+
+When we want to linearly model a response variable that is not from a normal Gaussian distribution, for example it could be binary (logistic regression) or discrete (Poisson) variable, we can use a generalization of a linear model - Genearlized Linear Model (GLM). It's solved by the iteratively reweighting least squares (IRLS) method. Now, the **G** in the name is also clear.
+
+The **A** letter Additive Model, means that the response variable depends linearly on unknown smooth functions. In other words, the goal is to model the response variable by independent variables, which are in the form of some smooth functions. Voilà, GAM is created.
+
+The GAM can be written formally as:
+
+$g(E(y_i)) = \beta_0 + f_1(x_{i1}) + ... + f_p(x_{ip}) + \epsilon_i,$
+
+y_i ~ some exponential family distribution
+
+where $i = 1, ..., N$, $g$ is a link function (identical, logarithmic or inverse), $y$ is a response variable, $x_1, ...., x_p$ are independent variables, $\beta_0$ is an intercept, $f_1, ..., f_p$ are unknown smooth functions and $\epsilon$ is an i.i.d. random error.
+
+The smooth function $f$ is composed by sum of basis functions $b$ and their corresponding regression coefficients $\beta$, formally written:
+
+$f(x) = \sum\limits_{i=1}^{q} b_i(x)\beta_i$
+
+where $q$ is basis dimension.
+
+Smooth functions are also called splines. Smoothing splines are real functions that are piecewise-defined by polynomial functions (basis functions). The places, where the polynomial pieces connect are called knots. In **GAMS**, penalized regression splines are used in order to regularize the smoothness of a spline.
+
+

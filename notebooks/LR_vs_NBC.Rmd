@@ -1,0 +1,86 @@
+---
+title: "Logistic Regression vs Naive Bayes Classifier"
+output: html_notebook
+author: Joe Brown
+---
+
+```{r Loading data}
+# install.packages('mlbench')
+data(BreastCancer, package = 'mlbench')
+
+## Create a copy of the BreastCancer dataset
+bc <- BreastCancer[complete.cases(BreastCancer), ]
+head(bc)
+```
+
+```{r preprocessing the dataset}
+## Remove the Id field
+bc <- bc[,-1]
+
+fields_to_factorize <- names(bc)[-ncol(bc)]
+for (field in fields_to_factorize) {
+  bc[, field] <- factor(as.character(bc[, field]))
+}
+str(bc)
+```
+
+```{r preprocessing the response variable}
+bc$Class <- ifelse(bc$Class == 'malignant', 1, 0)
+bc$Class <- factor(bc$Class, levels = c(0, 1))
+str(bc)
+```
+
+```{r Split train and test subsets}
+library(caret)
+
+'%ni%' <- Negate('%in%') # define the 'NOT IN" function
+options(scipen = 999)    # prevents printing scientific notation
+
+# Prep Training and Test data
+set.seed(100)
+trainDataIndex <- createDataPartition(bc$Class, p = 0.7, list = F) # 70% training data
+trainData <- bc[trainDataIndex, ]
+testData <- bc[-trainDataIndex, ]
+```
+
+```{r Inspecting the train subset}
+table(trainData$Class)
+```
+
+
+```{r Down-sampling}
+## Down sample
+set.seed(100)
+down_train <- downSample(x = trainData[, colnames(trainData) %ni% 'Class'],
+                         y = trainData$Class)
+
+# table(down_train)
+```
+
+
+```{r Building the logistic regression model}
+## Build Logistic Model
+system.time({
+  logitmod <- glm(Class ~ Cl.thickness + Cell.size + Cell.shape, family = 'binomial', data = down_train)
+})
+
+cat('')
+summary(logitmod)
+```
+
+
+```{r Predicting the test data}
+system.time(pred <- predict(logitmod, newdata = testData, type = 'response'))
+```
+
+```{r}
+y_pred_num <- ifelse(pred > 0.5, 1, 0)
+y_pred <- factor(y_pred_num, levels=c(0, 1))
+y_act <- testData$Class
+```
+
+```{r Compute accuracy rate}
+1 - mean(y_pred == y_act)
+```
+
+

@@ -1,0 +1,16 @@
+---
+title: "Machine Learning with the `diabetes` dataset"
+output: html_notebook
+---
+
+# Resource
+
+This tutorial is based from this [website](https://towardsdatascience.com/machine-learning-with-the-diabetes-data-set-in-r-11fa7ae944d0).
+
+```{r}
+library(mlbench)
+data(PimaIndiansDiabetes)
+str(PimaIndiansDiabetes)
+```
+
+

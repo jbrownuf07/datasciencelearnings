@@ -1,0 +1,9 @@
+---
+title: "Generalized Additive Models - An Introduction"
+output: html_notebook
+---
+
+# Resource
+
+[Environmental Computing](http://environmentalcomputing.net/intro-to-gams/)
+
